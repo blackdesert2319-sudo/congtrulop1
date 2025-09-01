@@ -1,0 +1,481 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Ứng dụng luyện cộng & trừ lớp 1</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+/* ====== Khung & font ====== */
+body{font-family:"Comic Sans MS",Arial,sans-serif;background:#f2f9ff;text-align:center;margin:0;padding:0}
+.container{max-width:980px;margin:20px auto;background:#fff;padding:20px;border-radius:15px;box-shadow:0 0 15px rgba(0,0,0,.25);position:relative}
+/* Ẩn tiêu đề lớn */
+h2{display:none}
+
+/* ====== Ô nhập & nút chung ====== */
+input,button{margin:5px;padding:10px;font-size:1.1em;border-radius:10px;border:2px solid #0077cc}
+input{font-weight:bold;background:#e6f2ff;text-align:center}
+#studentName {
+  width: 45% !important;
+  padding: 14px;
+  font-size: 1.8em !important;
+  font-weight: bold;
+  text-align: center !important;
+  color: #fff;
+  background: linear-gradient(135deg, #00cc66, #33cc99) !important;
+  border: 3px solid #00994d;
+  border-radius: 14px;
+  box-shadow: 0 0 12px rgba(0, 204, 102, 0.6);
+  transition: all 0.3s ease;
+}
+
+#studentName::placeholder {
+  color: #eaffea;
+  font-style: italic;
+  opacity: 0.9;
+}
+
+#studentName:focus {
+  outline: none;
+  transform: scale(1.05);
+  box-shadow: 0 0 18px rgba(0, 255, 153, 0.9);
+  border-color: #00ffaa;
+}
+
+.input-row{display:flex;align-items:center;justify-content:center;gap:10px;margin:10px 0 4px 0}
+
+/* ====== Chọn mức ====== */
+.level-buttons{display:flex;flex-wrap:wrap;justify-content:center;margin:6px 0 2px 0}
+.level-buttons button{width:40px;height:40px;margin:3px;font-size:1em;border-radius:6px;background:#66ccff;border:1px solid #0077cc;font-weight:bold;transition:box-shadow .3s,transform .2s}
+.level-buttons button.active{background:#ff9933;color:#fff}
+.level-buttons button:hover{box-shadow:0 0 10px #0077cc;transform:scale(1.05)}
+.level-buttons button:active{transform:scale(.95)}
+
+/* ====== Nút icon lớn (+, −, Reset) ====== */
+.icon-btn{width:60px;height:60px;margin:5px;border:2px solid #333;border-radius:8px;font-size:2.2em;font-weight:bold;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:2px 2px 5px rgba(0,0,0,.3);transition:box-shadow .3s,transform .2s}
+.icon-btn:hover{box-shadow:0 0 12px #0077cc;transform:scale(1.05)}
+.icon-btn:active{transform:scale(.95)}
+.btn-add{background:#28a745;color:#fff}
+.btn-sub{background:#dc3545;color:#fff}
+.btn-reset{color:#ff8c00;background:#fff}
+
+/* ====== Bố cục bài toán ====== */
+.problem{display:inline-block;margin:20px 0}
+.row{display:flex;justify-content:center;align-items:center}
+.cell{width:60px;height:60px;border:2px solid #000;text-align:center;line-height:60px;font-size:2em;margin:2px;border-radius:6px;background:#fff}
+.blue{background:#cceeff;font-weight:bold}.yellow{background:#ff6;font-weight:bold}
+.carry{background:#fc9;width:60px;height:50px;line-height:50px;font-size:2em;margin:2px;border-radius:6px;text-align:center;font-weight:bold}
+.operator{font-size:2.6em;font-weight:bold;color:#0077cc;margin:5px;width:40px;text-align:center}
+#resultBox{display:none}
+
+/* ====== Hiệu ứng kết quả nút "=" ====== */
+@keyframes flashGreen{0%{background:#0c6}50%{background:#4dff88}100%{background:#0c6}}
+@keyframes flashRed{0%{background:#c00}50%{background:#ff6666}100%{background:#c00}}
+.correctBtn{background:#0c6!important;color:#fff!important;animation:flashGreen .6s ease 2}
+.wrongBtn{background:#c00!important;color:#fff!important;animation:flashRed .6s ease 2}
+
+/* ====== Hiệu ứng rung cho Next ====== */
+@keyframes shake{0%{transform:translateX(0)}25%{transform:translateX(-4px)}50%{transform:translateX(4px)}75%{transform:translateX(-4px)}100%{transform:translateX(0)}}
+.shake{animation:shake .4s}
+
+/* ====== Khu thống kê bên phải ====== */
+#statsRow{display:flex;justify-content:center;align-items:flex-start;gap:16px}
+#chartBox{width:240px;min-height:160px}
+#progressChart{width:100%!important;height:160px!important}
+
+/* ====== Leaderboard cải tiến ====== */
+#leaderboard{width:260px;background:#f9f9f9;border:1px solid #ccc;border-radius:10px;padding:10px;font-size:.95em;text-align:left}
+#leaderboard h4{margin:0 0 8px 0;color:#0077cc;text-align:center}
+#leaderboard ul{list-style:none;padding:0;margin:0}
+#leaderboard li{padding:6px 10px;margin:4px 0;border-radius:8px;transition:background .25s,transform .2s;cursor:pointer;display:flex;align-items:center;font-weight:bold}
+#leaderboard li:hover{background:#f0f8ff;transform:scale(1.02)}
+#leaderboard li .rank{width:26px;display:inline-block}
+#leaderboard li .icon{margin-right:6px}
+/* Top 3 */
+#leaderboard li.rank-1{background:#ffd700;color:#000}
+#leaderboard li.rank-2{background:#c0c0c0;color:#000}
+#leaderboard li.rank-3{background:#cd7f32;color:#fff}
+
+/* ====== Nút kiểm tra (=) hình vuông ====== */
+.check-btn-square{width:74px;height:74px;background:#ccc;border:2px solid #333;border-radius:8px;font-size:2.4em;font-weight:bold;color:#000;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:2px 2px 5px rgba(0,0,0,.3);transition:background .3s,box-shadow .3s,transform .2s}
+.check-btn-square:hover{box-shadow:0 0 12px #333;transform:scale(1.05)}
+.check-btn-square:active{transform:scale(.95)}
+
+/* ====== Nút Next (▶) ====== */
+.next-btn-square{width:50px;height:50px;background:#0077cc;border:2px solid #004a99;border-radius:8px;font-size:2em;font-weight:bold;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:2px 2px 5px rgba(0,0,0,.3);transition:background .3s,box-shadow .3s,transform .2s}
+.next-btn-square.active{background:#0c6!important}
+.next-btn-square:hover{box-shadow:0 0 12px #0c6;transform:scale(1.05)}
+.next-btn-square:active{transform:scale(.95)}
+
+/* ====== Nút Home (🏠) ====== */
+.home-btn-square{width:50px;height:50px;background:#800080;border:2px solid #4b004b;border-radius:8px;font-size:1.8em;font-weight:bold;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:2px 2px 5px rgba(0,0,0,.3);transition:box-shadow .3s,transform .2s}
+.home-btn-square:hover{background:#a020a0;box-shadow:0 0 12px #a020a0;transform:scale(1.05)}
+.home-btn-square:active{transform:scale(.95)}
+
+/* ====== Modal chi tiết học sinh ====== */
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;animation:fadeIn .2s}
+.modal-overlay.show{display:flex}
+.modal{position:relative;background:#fff;border:2px solid #0077cc;border-radius:12px;padding:16px 20px;width:350px;max-width:92vw;box-shadow:0 10px 26px rgba(0,0,0,.35)}
+.modal h3{margin:0 0 8px 0;color:#0077cc}
+.modal .close{position:absolute;top:8px;right:10px;border:none;background:transparent;font-size:1.4em;cursor:pointer}
+.modal .summary{margin:6px 0 10px 0}
+.modal table{width:100%;border-collapse:collapse}
+.modal th,.modal td{border-bottom:1px solid #eee;padding:6px;text-align:center}
+.modal th{background:#f2f9ff}
+
+.btn-add, .btn-sub {
+  width: 100px !important;
+  height: 100px !important;
+  font-size: 3em !important;
+  border-radius: 18px !important;
+  box-shadow: 0 0 16px rgba(0,0,0,0.45);
+}
+.btn-add {
+  background: linear-gradient(135deg, #28a745, #66ff99) !important;
+  border: 3px solid #1e7e34 !important;
+  text-shadow: 1px 1px 2px #004d26;
+}
+.btn-sub {
+  background: linear-gradient(135deg, #dc3545, #ff8080) !important;
+  border: 3px solid #a71d2a !important;
+  text-shadow: 1px 1px 2px #660000;
+}
+.btn-add:hover, .btn-sub:hover {
+  transform: scale(1.15);
+  box-shadow: 0 0 22px rgba(0,0,0,0.6);
+}
+</style>
+
+<!-- Firebase SDK (dual: localStorage + Firestore) -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
+  import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyA-706KLXscp3AMxGe7Donwn-tQcUdqb4M",
+    authDomain: "appchuongnt.firebaseapp.com",
+    projectId: "appchuongnt",
+    storageBucket: "appchuongnt.appspot.com",
+    messagingSenderId: "331168794480",
+    appId: "1:331168794480:web:fdf490115766392a5871b5",
+    measurementId: "G-B02CSTX34Z"
+  };
+
+  // Init Firebase
+  const app = initializeApp(firebaseConfig);
+  try { getAnalytics(app); } catch(e) { /* ignore when file:// or blocked */ }
+  const db = getFirestore(app);
+
+  // Expose to global for non-module scripts
+  window.saveToFirebase = async function(name, date, isRight){
+    try{
+      const ref = doc(db, "results", name, "dates", date);
+      const snap = await getDoc(ref);
+      let data = { right:0, wrong:0 };
+      if(snap.exists()) data = snap.data();
+      if(isRight) data.right++; else data.wrong++;
+      await setDoc(ref, data);
+    }catch(err){
+      console.error("Firebase save error:", err);
+    }
+  };
+</script>
+
+</head>
+<body>
+<div class="container">
+  <!-- Khu chọn chế độ -->
+  <div id="setupArea">
+    <div class="input-row">
+      <input id="studentName" placeholder="✏️ Nhập tên học sinh...">
+      <button id="btnAdd" class="icon-btn btn-add">+</button>
+      <button id="btnSub" class="icon-btn btn-sub">−</button>
+    </div>
+    <div class="level-buttons" id="levelButtons"></div>
+
+    <div id="statsRow">
+      <div id="chartBox">
+        <canvas id="progressChart"></canvas>
+        <div style="margin-top:10px;text-align:left;width:240px">
+          <button id="resetAllBtn" class="icon-btn btn-reset" title="Xóa toàn bộ dữ liệu">↻</button>
+        </div>
+      </div>
+      <div id="leaderboard">
+        <h4>Top 10 học sinh</h4>
+        <ul id="leaderboardList"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Khu làm bài -->
+  <div id="gameArea" style="display:none;position:relative">
+    <div id="resetBox" style="position:absolute;top:10px;right:10px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px">
+      <div id="personalStats" style="font-weight:bold;color:#0077cc"></div>
+      <button id="resetBtn" class="icon-btn btn-reset" title="Xóa dữ liệu học sinh này">↻</button>
+    </div>
+    <div class="problem" id="problem"></div>
+    <div id="resultBox" class="result"></div>
+    <div class="row" style="margin-top:10px;gap:8px">
+      <button id="nextBtn" class="next-btn-square" title="Câu tiếp">▶</button>
+    </div>
+    <div class="row" style="margin-top:15px;justify-content:center">
+      <button id="backBtn" class="home-btn-square" title="Về trang chính">🏠</button>
+    </div>
+  </div>
+</div>
+
+<!-- Âm thanh -->
+<audio id="soundCorrect" src="successed-295058.mp3"></audio>
+<audio id="soundWrong" src="oh-no-392258.mp3"></audio>
+
+<!-- Modal -->
+<div id="modalOverlay" class="modal-overlay" role="dialog" aria-modal="true" aria-hidden="true">
+  <div class="modal">
+    <button class="close" id="modalClose" aria-label="Đóng">×</button>
+    <h3 id="modalTitle"></h3>
+    <div class="summary" id="modalSummary"></div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+/* ====== Trạng thái ====== */
+let currentOp = ""; // add | sub
+let num1=0,num2=0,correctAnswer=0,currentLevel=1;
+let alreadyChecked=false; // chống cộng dồn điểm khi bấm lại
+let progressChart=null;
+
+/* ====== Tiện ích ====== */
+const $ = (sel)=>document.querySelector(sel);
+const el = (tag,props={})=>Object.assign(document.createElement(tag),props);
+function splitDigits(n){return n<10?["",n]:[Math.floor(n/10),n%10]}
+function hasCarry(a,b){return a%10+b%10>=10}
+function hasBorrow(a,b){return a%10<b%10}
+function getRangeByLevel(l){if(l<=3)return 10;if(l<=6)return 20;if(l<=9)return 50;return 99}
+
+/* ====== Sinh bài mới ====== */
+function nextProblem(){
+  alreadyChecked=false;
+  const r=getRangeByLevel(currentLevel);
+  do{
+    num1=Math.floor(Math.random()*r);
+    num2=Math.floor(Math.random()*r);
+    if(currentOp==="sub"&&num1<num2) [num1,num2]=[num2,num1];
+    correctAnswer=(currentOp==="add")?num1+num2:num1-num2;
+    if(currentOp==="add"&&correctAnswer>99) continue;
+    if(currentOp==="sub"&&correctAnswer<0) continue;
+    if(currentLevel<=6){
+      if(currentOp==="add" && hasCarry(num1,num2)) continue;
+      if(currentOp==="sub" && hasBorrow(num1,num2)) continue;
+    }
+    break;
+  }while(true);
+
+  const op = currentOp==="add"?"+":"-";
+  const d1=splitDigits(num1), d2=splitDigits(num2);
+  $('#problem').innerHTML = `
+    <div class='row'><div class='operator'>&nbsp;</div><input id='carryTop' class='carry' readonly><div style="width:60px;"></div></div>
+    <div class='row'><div class='operator'>${op}</div><div class='cell blue'>${d1[0]}</div><div class='cell blue'>${d1[1]}</div></div>
+    <div class='row'><div class='operator'>&nbsp;</div><div class='cell blue'>${d2[0]}</div><div class='cell blue'>${d2[1]}</div></div>
+    <div class='row'>
+      <button id='checkBtn' class='check-btn-square'>=</button>
+      <input id='ansTens' class='cell yellow' inputmode='numeric' maxlength='1' pattern='[0-9]*'/>
+      <input id='ansOnes' class='cell yellow' inputmode='numeric' maxlength='1' pattern='[0-9]*'/>
+    </div>`;
+
+  enhanceInputs();
+  $('#checkBtn').onclick = checkAnswer;
+
+  const nextBtn=$('#nextBtn');
+  if(nextBtn){
+    nextBtn.classList.add('active');
+    setTimeout(()=>nextBtn.classList.remove('active'),800);
+  }
+}
+
+/* ====== Ô nhập 1 chữ số ====== */
+function setupSingleDigitInput(elm,next=null){
+  if(!elm) return;
+  elm.setAttribute('maxlength','1');
+  elm.setAttribute('inputmode','numeric');
+  elm.addEventListener('input',()=>{
+    elm.value = elm.value.replace(/\D+/g,'');
+    if(elm.value.length===1){
+      elm.blur();
+      if(next) next.focus();
+    }
+  });
+  elm.addEventListener('focus',()=>{elm.value=''});
+}
+function enhanceInputs(){
+  const tens=$('#ansTens');
+  const ones=$('#ansOnes');
+  setupSingleDigitInput(tens,null); // Không tự nhảy sang đơn vị
+  setupSingleDigitInput(ones,tens); // Nhập xong đơn vị → nhảy sang chục
+
+  ones.addEventListener('input',()=>{
+    const v=ones.value;
+    if(v.length===1){
+      if(currentOp==='add'){
+        if(num1%10+num2%10>=10 && +v === (num1%10+num2%10)%10){
+          $('#carryTop').value = '+1';
+        }
+      }else{
+        if(num1%10 < num2%10 && +v === (10+num1%10-num2%10)){
+          $('#carryTop').value = '-1';
+        }
+      }
+    }
+  });
+}
+
+/* ====== Kiểm tra đáp án ====== */
+function checkAnswer(){
+  const t=parseInt($('#ansTens').value)||0;
+  const o=parseInt($('#ansOnes').value)||0;
+  const ans = 10*t+o;
+  const btn=$('#checkBtn');
+  const name=(($('#studentName').value)||'NoName').trim()||'NoName';
+  const today = new Date().toISOString().split('T')[0];
+
+  const ok = (ans===correctAnswer);
+  btn.classList.remove('correctBtn','wrongBtn');
+  btn.classList.add(ok?'correctBtn':'wrongBtn');
+
+  const au = ok? $('#soundCorrect') : $('#soundWrong');
+  try{
+    const p = au.play();
+    if(p && p.catch){ p.catch(()=>beep(ok?880:220,140)); }
+  }catch(e){ beep(ok?880:220,140); }
+
+  if(!alreadyChecked){
+    saveResult(name,today,ok);
+    alreadyChecked=true;
+  }
+}
+
+/* ====== Lưu & tải thống kê ====== */
+function saveResult(n,d,isRight){
+  // localStorage (offline)
+  const k='results';
+  const data = JSON.parse(localStorage.getItem(k)||'{}');
+  if(!data[n]) data[n]={};
+  if(!data[n][d]) data[n][d]={right:0,wrong:0};
+  if(isRight) data[n][d].right++; else data[n][d].wrong++;
+  localStorage.setItem(k,JSON.stringify(data));
+
+  // Firestore (online) - optional
+  if(window.saveToFirebase) { try{ window.saveToFirebase(n,d,isRight); }catch(e){ console.warn(e); } }
+
+  loadStats(n);
+}
+function loadStats(name){
+  const all = JSON.parse(localStorage.getItem('results')||'{}');
+  const stats = all[name]||{};
+  if(window.Chart){
+    const labels = Object.keys(stats);
+    const rights = labels.map(d=>stats[d].right);
+    const wrongs = labels.map(d=>stats[d].wrong);
+    const ctx = $('#progressChart').getContext('2d');
+    if(progressChart) progressChart.destroy();
+    progressChart = new Chart(ctx,{
+      type:'bar',
+      data:{
+        labels: labels.length?labels:['Chưa có'],
+        datasets:[
+          {label:'Đúng',data:rights.length?rights:[0],backgroundColor:'green'},
+          {label:'Sai',data:wrongs.length?wrongs:[0],backgroundColor:'red'}
+        ]
+      },
+      options:{responsive:true,plugins:{legend:{display:true}},scales:{y:{beginAtZero:true}}}
+    });
+  }
+  updateLeaderboard();
+  let r=0,w=0; for(const d in stats){ r+=stats[d].right; w+=stats[d].wrong; }
+  $('#personalStats').innerText = `${name}: ${r}/${r+w||0}`;
+}
+
+/* ====== Leaderboard ====== */
+function aggregateAll(){
+  const data = JSON.parse(localStorage.getItem('results')||'{}');
+  const arr=[];
+  for(const name in data){
+    let R=0,W=0; for(const d in data[name]){ R+=data[name][d].right; W+=data[name][d].wrong; }
+    const T=R+W; if(T>0) arr.push({name, right:R, wrong:W, total:T, ratio:R/T});
+  }
+  arr.sort((a,b)=>b.ratio-a.ratio || b.total-a.total);
+  return arr.slice(0,10);
+}
+
+function updateLeaderboard(){
+  const list = $('#leaderboardList');
+  list.innerHTML='';
+  const top = aggregateAll();
+  top.forEach((s,i)=>{
+    const li = el('li');
+    li.classList.add(`rank-${i+1}`);
+    const icon = i===0?'🏆':(i===1?'🥈':(i===2?'🥉':''));
+    li.innerHTML = `<span class="rank">${i+1}.</span>${icon?`<span class="icon">${icon}</span>`:''}<span class="name">${s.name}</span>&nbsp;–&nbsp;<span class="score">${s.right}/${s.total}</span>`;
+    li.addEventListener('click',()=>openStudentModal(s.name));
+    list.appendChild(li);
+  });
+}
+
+function openStudentModal(name){
+  const all = JSON.parse(localStorage.getItem('results')||'{}');
+  const stats = all[name]||{};
+  $('#modalTitle').innerText = `Thành tích: ${name}`;
+  let R=0,W=0; const rows=[];
+  const dates = Object.keys(stats).sort();
+  dates.forEach(d=>{ R+=stats[d].right; W+=stats[d].wrong; rows.push(`<tr><td>${d}</td><td>${stats[d].right}</td><td>${stats[d].wrong}</td><td>${stats[d].right+stats[d].wrong}</td></tr>`); });
+  const T=R+W; const rate = T? Math.round(R/T*100):0;
+  $('#modalSummary').innerHTML = `<b>Đúng/Sai:</b> ${R}/${T} (${rate}%)`;
+  $('#modalBody').innerHTML = rows.length? `<table><thead><tr><th>Ngày</th><th>Đúng</th><th>Sai</th><th>Tổng</th></tr></thead><tbody>${rows.join('')}</tbody></table>` : '<i>Chưa có dữ liệu.</i>';
+  showModal(true);
+}
+
+function showModal(flag){
+  const overlay = $('#modalOverlay');
+  overlay.classList.toggle('show', !!flag);
+  overlay.setAttribute('aria-hidden', flag? 'false':'true');
+}
+$('#modalClose').addEventListener('click',()=>showModal(false));
+$('#modalOverlay').addEventListener('click',(e)=>{ if(e.target.id==='modalOverlay') showModal(false); });
+
+/* ====== Âm thanh fallback ====== */
+function beep(freq=440,ms=150){
+  try{
+    const ctx=new (window.AudioContext||window.webkitAudioContext)();
+    const o=ctx.createOscillator(); const g=ctx.createGain();
+    o.type='sine'; o.frequency.value=freq; o.connect(g); g.connect(ctx.destination);
+    o.start(); g.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime+ms/1000);
+    setTimeout(()=>{o.stop();ctx.close();}, ms+40);
+  }catch(e){}
+}
+
+/* ====== Điều hướng & reset ====== */
+function goBack(){ $('#gameArea').style.display='none'; $('#setupArea').style.display='block'; }
+function startGame(op){
+  const n = ($('#studentName').value||'').trim();
+  if(!n){ alert('Vui lòng nhập tên học sinh trước khi chơi!'); return; }
+  currentOp = op; $('#setupArea').style.display='none'; $('#gameArea').style.display='block'; loadStats(n); nextProblem();
+}
+
+/* ====== Khởi động ====== */
+window.addEventListener('load',()=>{
+  $('#btnAdd').onclick = ()=>startGame('add');
+  $('#btnSub').onclick = ()=>startGame('sub');
+  const lv=$('#levelButtons'); lv.innerHTML='';
+  for(let i=1;i<=12;i++){ const b=el('button',{innerText:i}); b.onclick=()=>{currentLevel=i; document.querySelectorAll('.level-buttons button').forEach(x=>x.classList.remove('active')); b.classList.add('active');}; if(i===1) b.classList.add('active'); lv.appendChild(b);}  
+  $('#nextBtn').onclick=()=>{ const btn=$('#nextBtn'); btn.classList.add('shake'); setTimeout(()=>btn.classList.remove('shake'),400); nextProblem(); const c=$('#checkBtn'); if(c) c.classList.remove('correctBtn','wrongBtn'); };
+  $('#backBtn').onclick=goBack;
+  $('#resetBtn').onclick=()=>{ const n=($('#studentName').value||'NoName').trim()||'NoName'; const all=JSON.parse(localStorage.getItem('results')||'{}'); if(all[n]){ delete all[n]; localStorage.setItem('results',JSON.stringify(all)); } loadStats(n); };
+  $('#resetAllBtn').onclick=()=>{ if(confirm('Bạn có chắc muốn xóa toàn bộ thống kê của tất cả học sinh?')){ localStorage.removeItem('results'); if(progressChart) progressChart.destroy(); const ctx=$('#progressChart').getContext('2d'); progressChart=new Chart(ctx,{type:'bar',data:{labels:['Chưa có'],datasets:[{label:'Đúng',data:[0],backgroundColor:'green'},{label:'Sai',data:[0],backgroundColor:'red'}]},options:{responsive:true,plugins:{legend:{display:true}},scales:{y:{beginAtZero:true}}}}); updateLeaderboard(); } };
+  updateLeaderboard();
+});
+</script>
+</body>
+</html>
